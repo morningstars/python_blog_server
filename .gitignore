@@ -1,0 +1,11 @@
+# Created by .ignore support plugin (hsz.mobi)
+
+.iead
+.idea/.gitignore
+.idea/encodings.xml
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/python_blog_server.iml
+.idea/vcs.xml
+python_blog_server/__pycache__/
