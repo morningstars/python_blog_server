@@ -14,10 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf.urls import url
 from . import views
+import user
 urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'^test_api', views.test_api),
+    url(r'^v1/users', include('user.urls')),
+    # 添加btoken模块 url映射 用于登录操作
+    url(r'^v1/tokens', include('btoken.urls')),
 ]
