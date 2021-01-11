@@ -9,8 +9,8 @@ import jwt
 # Create your views here.
 
 def users(request, username=None):
-    print(request.method)
-    print(username)
+    print('method', request.method)
+    print('username', username)
     if request.method == 'GET':
         #  /v1/users/zhangsan?info=1&email=1
         if username:
@@ -46,6 +46,7 @@ def users(request, username=None):
                         'username': user.username,
                         'info': user.info,
                         'nickname': user.nickname,
+                        'sign': user.sign,
                         'avatar': str(user.avatar)
                     }}
                 return JsonResponse(result)
@@ -138,7 +139,37 @@ def users(request, username=None):
 
     elif request.method == 'PUT':
         # 修改用户数据
-        pass
+
+        users = UserProfile.objects.filter(username=username)
+        print(users)
+        if not users:
+            result = {'code': 208, 'error': 'User is not exist'}
+            return JsonResponse(result)
+
+        json_str = request.body
+        print(json_str)
+        if not json_str:
+            result = {'code': 202, 'error': 'please put data'}
+            return JsonResponse(result)
+
+        print('-----------')
+        json_obj = json.loads(json_str)
+        print('//////////')
+        print(json_obj)
+
+        nickname = json_obj.get('nickname', '')
+        sign = json_obj.get('sign', '')
+        info = json_obj.get('info', '')
+
+        user = users.first()
+        user.nickname = nickname
+        user.sign = sign
+        user.info = info
+        user.save()
+
+        result = {'code': 200, 'username': username}
+        return JsonResponse(result)
+
     return JsonResponse({
         'code': 200,
         'data': {
@@ -158,3 +189,25 @@ def make_token(username, expire=24 * 3600):
     now_t = time.time()
     payload = {'username': username, 'exp': int(now_t + expire)}
     return jwt.encode(payload, key, algorithm='HS256')
+
+
+def user_avater(request, username):
+    # 当前必须是post提交
+    if request.method != 'POST':
+        result = {'code': 210, 'error': 'Please use post'}
+        return JsonResponse(result)
+
+    users = UserProfile.objects.filter(username=username)
+    if not users:
+        result = {'code': 208, 'error': 'The user is not existed'}
+        return JsonResponse(result)
+
+    if request.FILES.get('avatar'):
+        # 正常提交图片信息 进行存储
+        users[0].avatar = request.FILES['avatar']
+        users[0].save()
+        result = {'code': 200, 'username': username}
+        return JsonResponse(result)
+    else:
+        result = {'code': 211, 'error': 'Please give avatar'}
+        return JsonResponse(result)
