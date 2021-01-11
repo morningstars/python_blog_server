@@ -54,8 +54,7 @@ def users(request, username=None):
             users = UserProfile.objects.all()
             data = []
 
-            for i in range(len(users)):
-                user = users[i]
+            for user in users:
                 aDict = {
                     'username': user.username,
                     'info': user.info,
