@@ -57,7 +57,6 @@ def btoken(request):
     })
 
 
-
 def make_token(username, expire=24 * 3600):
     key = 'abcdef1234'
     payload = {'username': username, 'exp': int(time.time() + expire)}
