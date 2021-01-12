@@ -1,13 +1,15 @@
 import time
 from django.http import JsonResponse
 import hashlib
+
+from tools.logging_decorator import logging_check
 from user.models import UserProfile
 import json
 import jwt
 
 
 # Create your views here.
-
+@logging_check('PUT')
 def users(request, username=None):
     print('method', request.method)
     print('username', username)
@@ -71,8 +73,6 @@ def users(request, username=None):
                 'data': data
             }
             return JsonResponse(result)
-
-
 
     elif request.method == 'POST':
         # 注册用户
@@ -139,29 +139,19 @@ def users(request, username=None):
 
     elif request.method == 'PUT':
         # 修改用户数据
-
-        users = UserProfile.objects.filter(username=username)
-        print(users)
-        if not users:
-            result = {'code': 208, 'error': 'User is not exist'}
-            return JsonResponse(result)
+        user = request.user
 
         json_str = request.body
-        print(json_str)
         if not json_str:
             result = {'code': 202, 'error': 'please put data'}
             return JsonResponse(result)
 
-        print('-----------')
         json_obj = json.loads(json_str)
-        print('//////////')
-        print(json_obj)
 
         nickname = json_obj.get('nickname', '')
         sign = json_obj.get('sign', '')
         info = json_obj.get('info', '')
 
-        user = users.first()
         user.nickname = nickname
         user.sign = sign
         user.info = info
@@ -191,6 +181,7 @@ def make_token(username, expire=24 * 3600):
     return jwt.encode(payload, key, algorithm='HS256')
 
 
+@logging_check('POST')
 def user_avater(request, username):
     # 当前必须是post提交
     if request.method != 'POST':
