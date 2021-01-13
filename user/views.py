@@ -9,7 +9,7 @@ import jwt
 
 
 # Create your views here.
-@logging_check('PUT')
+@logging_check('PUT', 'DELETE')
 def users(request, username=None):
     print('method', request.method)
     print('username', username)
@@ -159,6 +159,9 @@ def users(request, username=None):
 
         result = {'code': 200, 'username': username}
         return JsonResponse(result)
+
+    elif request.method == 'DELETE':
+        pass
 
     return JsonResponse({
         'code': 200,

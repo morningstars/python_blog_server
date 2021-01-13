@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^v1/users', include('user.urls')),
     # 添加btoken模块 url映射 用于登录操作
     url(r'^v1/tokens', include('btoken.urls')),
+    url(r'^v1/topics', include('topic.urls')),
 ]
 
 # 添加图片路由映射 http://127.0.0.1:8000/media/aaa.jpg
