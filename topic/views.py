@@ -4,13 +4,14 @@ import json
 from django.shortcuts import render
 from django.http import JsonResponse
 from tools.logging_decorator import logging_check
+from tools.logging_decorator import get_user_by_request
 from topic.models import Topic
 from user.models import UserProfile
 
 
 # Create your views here.
 
-@logging_check('POST', 'GET')
+@logging_check('POST')
 def topics(request, author_id=None):
     if request.method == 'POST':
         # 发表博客
@@ -64,33 +65,50 @@ def topics(request, author_id=None):
             return JsonResponse(result)
 
     elif request.method == 'GET':
+        # v1/topics/zhangsan
+        # 获取用户博客列表 / 具体的博客内容【带 ?t_id=xxx 】
 
-        author = request.user
+        # 访问当前博客的访问者 --visitor   --author
+        author = UserProfile.objects.filter(username=author_id).first()
 
-        topics = Topic.objects.all()
+        if not author:
+            result = {'code': 306, 'error': 'The current author is not exist'}
+            return  JsonResponse(result)
 
-        if not topics:
-            result = {'code': 306, 'error': 'Have no blog'}
-            return JsonResponse(result)
+        visitor = get_user_by_request(request)
 
-        result = {'code': 200,
-                  'data': {
-                      'nickname': 'hello'
-                  }}
-        topic_list = []
-        for t in topics:
-            print(t.create_time)
-            dic = {'id': t.id,
-                   'title': t.title,
-                   'categoty': t.category,
-                   # 'create_time': '{yyyy-MM-dd hh:mm:ss}'.format(t.create_time),
-                   'content': t.content,
-                   'introduce': t.introduce,
-                   'author': t.author.username
-                   }
-            topic_list.append(dic)
+        # 判断两个的username是否一致  从而判断是否要获取private的博客
+        visitor_username = None
+        if visitor:
+            visitor_username = visitor.username
 
-        result['data']['topics'] = topic_list
+        if visitor_username == author_id:
+            # 博主在访问自己的博客
+            author_topics = Topic.objects.filter(author_id=author_id)
+        else:
+            # 其他访问者在访问当前博客
+            author_topics = Topic.objects.filter(author_id=author_id, limit='public')
+
+        result = make_topics_res(author, author_topics)
         return JsonResponse(result)
 
 
+def make_topics_res(author, author_topics):
+    result = {'code': 200, 'data': {}}
+    topic_list = []
+    for topic in author_topics:
+        print(topic.create_time)
+        dic = {
+            'id': topic.id,
+            'title': topic.title,
+            'categoty': topic.category,
+            'created_time': topic.create_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'content': topic.content,
+            'introduce': topic.introduce,
+            'author': topic.author.nickname
+        }
+        topic_list.append(dic)
+
+    result['data']['topics'] = topic_list
+    result['data']['nickname'] = author.nickname
+    return result

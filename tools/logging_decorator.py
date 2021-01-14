@@ -27,7 +27,7 @@ def logging_check(*methods):
             # 严格校验methods里的参数是POST,GET,PUT,DELETE
 
             # 校验token
-            if not token:
+            if not token or token == 'null':
                 result = {'code': 107, 'error': 'Please give token'}
                 return JsonResponse(result)
 
@@ -48,3 +48,27 @@ def logging_check(*methods):
         return wrapper
 
     return _logging_check
+
+
+def get_user_by_request(request):
+    '''
+    通过request获取用户
+    :param request:
+    :return: user对象 or None
+    '''
+    token = request.META.get('HTTP_AUTHORIZATION')
+
+    if not token or token == 'null':
+        return None
+
+    try:
+        res = jwt.decode(token, KEY, algorithms='HS256')
+    except Exception as e:
+        print('token error is %s' % e)
+        return None
+
+    # 获取token中的用户名
+    username = res['username']
+    user = UserProfile.objects.get(username=username)
+    return user
+
