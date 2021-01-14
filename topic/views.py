@@ -5,11 +5,12 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from tools.logging_decorator import logging_check
 from topic.models import Topic
+from user.models import UserProfile
 
 
 # Create your views here.
 
-@logging_check('POST')
+@logging_check('POST', 'GET')
 def topics(request, author_id=None):
     if request.method == 'POST':
         # 发表博客
@@ -61,3 +62,35 @@ def topics(request, author_id=None):
             print('error is %s' % e)
             result = {'code': 305, 'error': 'Create error'}
             return JsonResponse(result)
+
+    elif request.method == 'GET':
+
+        author = request.user
+
+        topics = Topic.objects.all()
+
+        if not topics:
+            result = {'code': 306, 'error': 'Have no blog'}
+            return JsonResponse(result)
+
+        result = {'code': 200,
+                  'data': {
+                      'nickname': 'hello'
+                  }}
+        topic_list = []
+        for t in topics:
+            print(t.create_time)
+            dic = {'id': t.id,
+                   'title': t.title,
+                   'categoty': t.category,
+                   # 'create_time': '{yyyy-MM-dd hh:mm:ss}'.format(t.create_time),
+                   'content': t.content,
+                   'introduce': t.introduce,
+                   'author': t.author.username
+                   }
+            topic_list.append(dic)
+
+        result['data']['topics'] = topic_list
+        return JsonResponse(result)
+
+
