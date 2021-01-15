@@ -1,7 +1,6 @@
 import datetime
 import json
 
-from django.shortcuts import render
 from django.http import JsonResponse
 from tools.logging_decorator import logging_check
 from tools.logging_decorator import get_user_by_request
@@ -11,7 +10,7 @@ from user.models import UserProfile
 
 # Create your views here.
 
-@logging_check('POST')
+@logging_check('POST', 'DELETE')
 def topics(request, author_id=None):
     if request.method == 'POST':
         # 发表博客
@@ -73,7 +72,7 @@ def topics(request, author_id=None):
 
         if not author:
             result = {'code': 306, 'error': 'The current author is not exist'}
-            return  JsonResponse(result)
+            return JsonResponse(result)
 
         visitor = get_user_by_request(request)
 
@@ -82,15 +81,46 @@ def topics(request, author_id=None):
         if visitor:
             visitor_username = visitor.username
 
-        if visitor_username == author_id:
-            # 博主在访问自己的博客
-            author_topics = Topic.objects.filter(author_id=author_id)
+        category = request.GET.get('category', '')
+        if category in ['tec', 'no-tec']:
+            if visitor_username == author_id:
+                # 博主在访问自己的博客
+                author_topics = Topic.objects.filter(author_id=author_id, category=category)
+            else:
+                # 其他访问者在访问当前博客
+                author_topics = Topic.objects.filter(author_id=author_id, limit='public', category=category)
         else:
-            # 其他访问者在访问当前博客
-            author_topics = Topic.objects.filter(author_id=author_id, limit='public')
+            if visitor_username == author_id:
+                # 博主在访问自己的博客
+                author_topics = Topic.objects.filter(author_id=author_id)
+            else:
+                # 其他访问者在访问当前博客
+                author_topics = Topic.objects.filter(author_id=author_id, limit='public')
 
         result = make_topics_res(author, author_topics)
         return JsonResponse(result)
+
+    elif request.method == 'DELETE':
+        # 删除博客时  需要校验token中的user和url中的user是否一致
+        author = request.user
+        if author.username != author_id:
+            result = {'code': 306, 'error': 'You cannot delete this blog'}
+            return JsonResponse(result)
+
+        topic_id = request.GET.get('topic_id')
+        if not topic_id:
+            result = {'code': 307, 'error': 'You cannot delete all blog'}
+            return JsonResponse(result)
+
+        try:
+            topic = Topic.objects.get(id=topic_id)
+        except Exception as e:
+            print('delete error is %s' % e)
+            result = {'code': 308, 'error': 'your topic is not exist'}
+            return JsonResponse(result)
+
+        topic.delete()
+        return JsonResponse({'code': 200})
 
 
 def make_topics_res(author, author_topics):
